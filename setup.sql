@@ -96,4 +96,4 @@ INSERT INTO games (slug, title, description, category, difficulty, max_score, xp
 
 -- Default admin user (password: Admin@123)
 INSERT INTO users (username, email, password, full_name, department, role, avatar_initials)
-VALUES ('admin', 'admin@cybershield.local', '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Administrator', 'IT Security', 'admin', 'AD');
+VALUES ('admin', 'admin@cybershield.local', '$2b$12$y0QhfKqLFXuL3/omQ3H9Vuf3f6u9jGp7U.405uRn/JnqgSrL/BrLG', 'Administrator', 'IT Security', 'admin', 'AD');
