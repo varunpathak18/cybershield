@@ -1,10 +1,8 @@
 -- CyberShield Portal — Database Setup
--- Run: mysql -u root -p < setup.sql
+-- Import this file via phpMyAdmin into u336068262_cybershield
+-- (Database is already created via hPanel — do NOT run CREATE DATABASE)
 
-CREATE DATABASE IF NOT EXISTS cybershield CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE cybershield;
-
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id INT PRIMARY KEY AUTO_INCREMENT,
     username VARCHAR(50) NOT NULL UNIQUE,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -21,7 +19,7 @@ CREATE TABLE users (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE games (
+CREATE TABLE IF NOT EXISTS games (
     id INT PRIMARY KEY AUTO_INCREMENT,
     slug VARCHAR(50) NOT NULL UNIQUE,
     title VARCHAR(100) NOT NULL,
@@ -35,7 +33,7 @@ CREATE TABLE games (
     sort_order INT DEFAULT 0
 );
 
-CREATE TABLE game_sessions (
+CREATE TABLE IF NOT EXISTS game_sessions (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     game_id INT NOT NULL,
@@ -53,7 +51,7 @@ CREATE TABLE game_sessions (
     FOREIGN KEY (game_id) REFERENCES games(id) ON DELETE CASCADE
 );
 
-CREATE TABLE escape_room_stages (
+CREATE TABLE IF NOT EXISTS escape_room_stages (
     id INT PRIMARY KEY AUTO_INCREMENT,
     session_id INT NOT NULL,
     user_id INT NOT NULL,
@@ -67,7 +65,7 @@ CREATE TABLE escape_room_stages (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE achievements (
+CREATE TABLE IF NOT EXISTS achievements (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     badge_slug VARCHAR(50) NOT NULL,
@@ -77,7 +75,7 @@ CREATE TABLE achievements (
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     message TEXT NOT NULL,
