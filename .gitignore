@@ -1,0 +1,30 @@
+# ── Sensitive config (never commit this) ──
+config.php
+
+# ── OS files ──
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor files ──
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── PHP logs / cache ──
+*.log
+error_log
+/logs/
+
+# ── Node (if added later) ──
+node_modules/
+npm-debug.log
+
+# ── Composer (if added later) ──
+/vendor/
+
+# ── Uploads / user content ──
+/uploads/
+/assets/uploads/

@@ -1,0 +1,41 @@
+name: Deploy CyberShield → cybershield.techniki.in
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: SSH Deploy to Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy files via rsync
+        uses: burnett01/rsync-deployments@7.0.1
+        with:
+          switches: -avzr --delete --exclude='.git' --exclude='config.php' --exclude='.github' --exclude='.gitignore' --exclude='config.example.php'
+          path: ./
+          remote_path: /home/u336068262/domains/techniki.in/public_html/cybershield
+          remote_host: uk-fast-web1945.main-hosting.eu
+          remote_port: 65002
+          remote_user: u336068262
+          remote_key:  ${{ secrets.HOSTINGER_SSH_KEY }}
+
+      - name: Set permissions & verify
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host:     uk-fast-web1945.main-hosting.eu
+          port:     65002
+          username: u336068262
+          key:      ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            cd /home/u336068262/domains/techniki.in/public_html/cybershield
+            find . -type f -name "*.php" -exec chmod 644 {} \;
+            find . -type d -exec chmod 755 {} \;
+            chmod 644 .htaccess 2>/dev/null || true
+            echo "✅ CyberShield deployed at $(date)"
+            ls -la | head -20
