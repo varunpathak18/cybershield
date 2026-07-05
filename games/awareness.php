@@ -287,29 +287,55 @@ $already = getBestScore($userId, $gameId);
   </div>
 </div>
 
+<style>
+.awareness-step { display: none !important; }
+.awareness-step.active { display: block !important; }
+</style>
 <div class="toast-wrap" id="toast-wrap"></div>
 <script src="<?= APP_URL ?>/assets/js/main.js"></script>
 <script>
 // ── STEP NAV ──
 let currentStep = 1;
+
+// Show only step 1 on load
+document.addEventListener('DOMContentLoaded', function() {
+  for (var i = 1; i <= 6; i++) {
+    var el = document.getElementById('step-' + i);
+    if (el) el.style.display = (i === 1) ? 'block' : 'none';
+  }
+});
+
 function nextStep(from) {
-  document.getElementById('step-'+from).classList.remove('active');
-  document.getElementById('pip-'+from).classList.remove('active');
-  document.getElementById('pip-'+from).classList.add('done');
+  var fromEl = document.getElementById('step-' + from);
+  var toEl   = document.getElementById('step-' + (from + 1));
+  if (!fromEl || !toEl) return;
+  fromEl.style.display = 'none';
+  fromEl.classList.remove('active');
+  toEl.style.display = 'block';
+  toEl.classList.add('active');
+  var fromPip = document.getElementById('pip-' + from);
+  var toPip   = document.getElementById('pip-' + (from + 1));
+  if (fromPip) { fromPip.classList.remove('active'); fromPip.classList.add('done'); }
+  if (toPip)   { toPip.classList.remove('done'); toPip.classList.add('active'); }
   currentStep = from + 1;
-  document.getElementById('step-'+currentStep).classList.add('active');
-  document.getElementById('pip-'+currentStep).classList.add('active');
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
   if (currentStep === 6) buildAwarenessQuiz();
 }
+
 function prevStep(from) {
-  document.getElementById('step-'+from).classList.remove('active');
-  document.getElementById('pip-'+from).classList.remove('active');
-  document.getElementById('pip-'+(from-1)).classList.remove('done');
-  document.getElementById('pip-'+(from-1)).classList.add('active');
+  var fromEl = document.getElementById('step-' + from);
+  var toEl   = document.getElementById('step-' + (from - 1));
+  if (!fromEl || !toEl) return;
+  fromEl.style.display = 'none';
+  fromEl.classList.remove('active');
+  toEl.style.display = 'block';
+  toEl.classList.add('active');
+  var fromPip = document.getElementById('pip-' + from);
+  var toPip   = document.getElementById('pip-' + (from - 1));
+  if (fromPip) { fromPip.classList.remove('active'); }
+  if (toPip)   { toPip.classList.remove('done'); toPip.classList.add('active'); }
   currentStep = from - 1;
-  document.getElementById('step-'+currentStep).classList.add('active');
-  window.scrollTo(0,0);
+  window.scrollTo(0, 0);
 }
 
 // ── HYGIENE CHECKLIST ──

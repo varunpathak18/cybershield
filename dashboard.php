@@ -38,13 +38,7 @@ $diff_labels = ['beginner'=>'Beginner','easy'=>'Easy','medium'=>'Medium','hard'=
 ?>
 <div class="container">
   <div class="page-title">Welcome back, <span><?= htmlspecialchars(explode(' ', $user['full_name'])[0]) ?></span> 👋</div>
-  <p class="page-sub">
-    <?php if (!$awarenessCompleted): ?>
-      <span style="color:var(--yellow)">⚠ Complete the <strong>Cyber Hygiene Basics</strong> module first to unlock all games.</span>
-    <?php else: ?>
-      You're on track — keep completing modules to level up your security rank.
-    <?php endif; ?>
-  </p>
+  <p class="page-sub">You're on track — keep completing modules to level up your security rank.</p>
 
   <!-- STATS GRID -->
   <div class="grid-4 mb-3">
@@ -85,7 +79,7 @@ $diff_labels = ['beginner'=>'Beginner','easy'=>'Easy','medium'=>'Medium','hard'=
     <?php foreach ($games as $g):
       $best = $bestScores[$g['slug']];
       $pct  = $best ? round($best['percentage']) : 0;
-      $isLocked = $g['requires_awareness'] && !$awarenessCompleted && $g['slug'] !== 'awareness';
+      $isLocked = false; // All games open to everyone
       $isDone   = $best !== null;
     ?>
     <div class="card card-hover card-accent-top game-card" onclick="<?= $isLocked ? "showToast('Complete Cyber Hygiene Basics first!','error')" : "window.location='" . APP_URL . "/games/{$g['slug']}.php'" ?>">
