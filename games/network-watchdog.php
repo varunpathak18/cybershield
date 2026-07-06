@@ -10,6 +10,13 @@ $already = getBestScore($userId, $gameId);
   <a href="<?= APP_URL ?>/dashboard.php" style="color:var(--muted);font-size:.85rem;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem">← Dashboard</a>
   <div class="page-title">🌐 Network Watchdog</div>
   <p class="page-sub">Live network traffic is streaming from your organisation's firewall. Flag every suspicious or malicious packet before data is exfiltrated. Click a row to flag/unflag it.</p>
+
+  <div class="hint-bar">
+    <span class="hint-bar-label">💡 Hint</span>
+    <span style="color:var(--muted);font-size:.83rem">Look for unusual ports, external IPs, massive data transfers, and known attack patterns.</span>
+    <button class="hint-btn" onclick="alert('Hint: Red = definitely malicious (brute force, exfiltration, SQL injection). Yellow = suspicious. Watch for: unusual outbound data volumes, external SSH attempts, ICMP sweeps, and SQL payloads in traffic.')">💡 Show Hint</button>
+  </div>
+
   <?php if ($already): ?><div class="alert alert-success mb-2"><span class="alert-icon">✓</span>Best: <strong><?= round($already['percentage']) ?>%</strong>. Replay to improve.</div><?php endif; ?>
 
   <div class="card mb-2" style="padding:.8rem 1rem">

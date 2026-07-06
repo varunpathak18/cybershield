@@ -56,6 +56,13 @@ require_once dirname(__DIR__) . '/includes/header.php';
   <a href="<?= APP_URL ?>/dashboard.php" style="color:var(--muted);font-size:.85rem;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem">&#8592; Back to Dashboard</a>
   <div class="page-title">&#x1F3A3; Phishing Email Detective</div>
   <p class="page-sub">You have inherited a suspicious inbox. Open each email, look for red flags (highlighted in red), then decide: <strong>Phishing or Legitimate?</strong></p>
+
+  <div class="hint-bar">
+    <span class="hint-bar-label">💡 Hint</span>
+    <span style="color:var(--muted);font-size:.83rem">Red-highlighted text = suspicious clue. Hover it for details. Check sender addresses carefully.</span>
+    <button class="hint-btn" onclick="this.parentElement.nextElementSibling && alert('Look for: misspelled domains, urgency tactics, generic greetings, suspicious links, and requests for credentials.')">💡 Show Hint</button>
+  </div>
+
   <div class="score-panel">
     <div><div class="sp-val" style="color:var(--green)" id="sp-correct">0</div><div class="sp-lbl">Correct</div></div>
     <div><div class="sp-val" style="color:var(--red)" id="sp-wrong">0</div><div class="sp-lbl">Wrong</div></div>

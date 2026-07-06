@@ -76,6 +76,12 @@ require_once dirname(__DIR__) . '/includes/header.php';
   <div class="page-title">💀 Ransomware Attack Simulation</div>
   <p class="page-sub">Experience a ransomware attack from the victim's perspective. Every decision you make — or fail to make — has consequences.</p>
 
+  <div class="hint-bar">
+    <span class="hint-bar-label">💡 Hint</span>
+    <span style="color:var(--muted);font-size:.83rem">Think: what should you do BEFORE an attack? And what are the correct steps AFTER?</span>
+    <button class="hint-btn" onclick="alert('Key tips: Never open attachments from unknown senders. Always verify with IT. After ransomware: disconnect from network immediately, do NOT pay, contact security team, restore from clean backups.')">💡 Show Hint</button>
+  </div>
+
   <!-- PROGRESS -->
   <div style="display:flex;gap:8px;margin-bottom:1.5rem" id="stage-progress">
     <?php for($i=1;$i<=5;$i++): ?>

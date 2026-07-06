@@ -11,6 +11,12 @@ $already = getBestScore($userId, $gameId);
   <div class="page-title">📞 The Suspicious Call</div>
   <p class="page-sub">You will receive three simulated phone calls. Listen carefully — real audio will play via your speakers. Identify the manipulation tactics and choose the correct response.</p>
 
+  <div class="hint-bar">
+    <span class="hint-bar-label">💡 Hint</span>
+    <span style="color:var(--muted);font-size:.83rem">Scammers create urgency, impersonate authority, and ask for personal info or payment.</span>
+    <button class="hint-btn" onclick="alert('Hint: Legitimate organisations never ask for passwords, PINs, or gift cards over the phone. If in doubt — hang up and call the official number. Common tactics: fake IT support, bank fraud alerts, government impersonation.')">💡 Show Hint</button>
+  </div>
+
   <?php if ($already): ?>
     <div class="alert alert-success mb-2">
       <span class="alert-icon">✓</span>Best score: <strong><?= round($already['percentage']) ?>%</strong> — <?= number_format($already['xp_earned']) ?> XP earned. You can replay to improve.
