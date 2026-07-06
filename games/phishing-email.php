@@ -1,362 +1,165 @@
 <?php
 $pageTitle = 'Phishing Email Detective';
 require_once dirname(__DIR__) . '/includes/header.php';
-$gameRow = queryOne("SELECT * FROM games WHERE slug='phishing-email'");
-$gameId  = $gameRow['id'];
-$userId  = $user['id'];
-$already = getBestScore($userId, $gameId);
 ?>
-<div class="container" style="max-width:1100px">
-  <a href="<?= APP_URL ?>/dashboard.php" style="color:var(--muted);font-size:.85rem;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem">← Dashboard</a>
-  <div class="page-title">🎣 Phishing Email Detective</div>
-  <p class="page-sub">You have 7 emails in your inbox. Identify which are phishing attacks and which are legitimate. For phishing emails, find all the hidden red flags.</p>
-  <?php if ($already): ?>
-    <div class="alert alert-success mb-2"><span class="alert-icon">✓</span>Best score: <strong><?= round($already['percentage']) ?>%</strong>. Replay to beat your high score.</div>
-  <?php endif; ?>
-
-  <div class="card mb-2" style="padding:.8rem 1rem">
-    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem">
-      <div style="display:flex;align-items:center;gap:1rem;font-size:.82rem">
-        <span>Answered: <strong id="answered-count" style="color:var(--accent)">0</strong>/7</span>
-        <span>Flags found: <strong id="flags-found" style="color:var(--red)">0</strong></span>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="submitAll()" id="submit-all" disabled>Submit All Answers</button>
-    </div>
+<style>
+.sim-chrome{background:#1a1a2e;border-radius:10px;overflow:hidden;border:1px solid #333;box-shadow:0 20px 60px rgba(0,0,0,.6);margin-bottom:1.5rem}
+.sim-titlebar{background:#2d2d2d;padding:8px 12px;display:flex;align-items:center;gap:8px}
+.sim-dot{width:12px;height:12px;border-radius:50%}
+.sim-dot.red{background:#ff5f57}.sim-dot.yellow{background:#febc2e}.sim-dot.green{background:#28c840}
+.sim-url{flex:1;background:#3a3a3a;border-radius:6px;padding:4px 12px;font-size:.75rem;color:#aaa;margin:0 12px;font-family:monospace}
+.gmail-wrap{display:grid;grid-template-columns:190px 1fr;height:580px;background:#fff;color:#202124}
+.gmail-sidebar{background:#f6f8fc;border-right:1px solid #e0e0e0;padding:8px 0}
+.gmail-compose-btn{background:#c2e7ff;border:none;border-radius:20px;padding:10px 16px;font-size:.82rem;font-weight:600;cursor:default;display:flex;align-items:center;gap:8px;color:#001d35;width:calc(100% - 20px);margin:8px 10px 16px}
+.gmail-nav-item{padding:6px 14px 6px 20px;border-radius:0 20px 20px 0;display:flex;align-items:center;gap:10px;color:#202124;font-size:.8rem}
+.gmail-nav-item.active{background:#d3e3fd;font-weight:700}
+.gmail-nav-badge{background:#c5221f;color:#fff;border-radius:10px;padding:1px 6px;font-size:.68rem;font-weight:700;margin-left:auto}
+.gmail-list-wrap{border-right:1px solid #e0e0e0;overflow-y:auto;background:#fff}
+.gmail-list-item{display:grid;grid-template-columns:30px 1fr auto;gap:6px;align-items:center;padding:8px 10px;border-bottom:1px solid #f1f3f4;cursor:pointer;transition:background .15s}
+.gmail-list-item:hover{background:#f2f6fc}
+.gmail-list-item.selected{background:#e8f0fe}
+.gl-avatar{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:#fff;flex-shrink:0}
+.gl-from{font-size:.78rem;color:#202124;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl-subject{font-size:.74rem;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gl-date{font-size:.7rem;color:#888;white-space:nowrap;align-self:start;padding-top:2px}
+.gl-middle{min-width:0}
+.gmail-pane{display:flex;flex-direction:column;height:580px;overflow-y:auto;background:#fff}
+.gmail-pane-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#888;font-size:.9rem;gap:8px}
+.gmail-pane-header{padding:16px 20px 12px;border-bottom:1px solid #e0e0e0;flex-shrink:0}
+.gmail-subject-line{font-size:1.1rem;font-weight:400;color:#202124;margin-bottom:10px}
+.gmail-meta{display:flex;align-items:flex-start;gap:10px}
+.gmail-avatar-lg{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700;color:#fff;flex-shrink:0}
+.gmail-from-name{font-size:.86rem;font-weight:600;color:#202124}
+.gmail-from-addr{font-size:.73rem;color:#888;margin-top:1px}
+.gmail-timestamp{font-size:.73rem;color:#888;margin-left:auto;white-space:nowrap}
+.gmail-body{padding:16px 20px;font-size:.86rem;line-height:1.7;color:#202124;flex:1}
+.gmail-body p{margin-bottom:10px}
+.gmail-body ul{padding-left:1.4rem;margin:8px 0}
+.rf{background:rgba(211,47,47,.09);border-bottom:2px solid #d32f2f;color:#b71c1c;cursor:help;position:relative;display:inline}
+.rf-tip{display:none;position:absolute;bottom:calc(100% + 6px);left:0;background:#fff;border:1px solid #d32f2f;border-radius:8px;padding:10px 12px;font-size:.74rem;color:#202124;width:250px;z-index:50;box-shadow:0 4px 16px rgba(0,0,0,.25);line-height:1.5;white-space:normal;font-weight:400}
+.rf-tip::before{content:'🚩 Red Flag: ';font-weight:700;color:#d32f2f;display:block;margin-bottom:4px}
+.rf:hover .rf-tip{display:block}
+.gmail-actions{padding:10px 20px;border-top:2px solid #e0e0e0;background:#fafafa;display:flex;gap:10px;align-items:center;flex-shrink:0;flex-wrap:wrap}
+.btn-phish{background:#d32f2f;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer}
+.btn-phish:hover{background:#b71c1c}
+.btn-safe{background:#1e8e3e;color:#fff;border:none;padding:9px 16px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer}
+.btn-safe:hover{background:#155724}
+.verdict-correct{background:#e6f4ea;color:#137333;border:1px solid #137333;padding:5px 12px;border-radius:20px;font-size:.76rem;font-weight:700}
+.verdict-wrong{background:#fce8e6;color:#c5221f;border:1px solid #c5221f;padding:5px 12px;border-radius:20px;font-size:.76rem;font-weight:700}
+.score-panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.9rem 1.4rem;display:flex;align-items:center;gap:2rem;margin-bottom:1rem}
+.sp-val{font-size:1.5rem;font-weight:800;line-height:1}
+.sp-lbl{font-size:.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;margin-top:2px}
+.result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;z-index:1000}
+.result-card{background:var(--surface);border-radius:18px;padding:2.5rem;max-width:520px;width:90%;text-align:center;border:1px solid var(--border)}
+</style>
+<div class="container">
+  <a href="<?= APP_URL ?>/dashboard.php" style="color:var(--muted);font-size:.85rem;display:inline-flex;align-items:center;gap:4px;margin-bottom:1rem">&#8592; Back to Dashboard</a>
+  <div class="page-title">&#x1F3A3; Phishing Email Detective</div>
+  <p class="page-sub">You have inherited a suspicious inbox. Open each email, look for red flags (highlighted in red), then decide: <strong>Phishing or Legitimate?</strong></p>
+  <div class="score-panel">
+    <div><div class="sp-val" style="color:var(--green)" id="sp-correct">0</div><div class="sp-lbl">Correct</div></div>
+    <div><div class="sp-val" style="color:var(--red)" id="sp-wrong">0</div><div class="sp-lbl">Wrong</div></div>
+    <div><div class="sp-val" id="sp-remain">7</div><div class="sp-lbl">Remaining</div></div>
+    <div style="flex:1"></div>
+    <div style="font-size:.78rem;color:var(--muted)">&#x1F4A1; Hover red highlighted text for clues</div>
   </div>
-
-  <div class="email-client" id="email-client">
-    <!-- EMAIL SIDEBAR -->
-    <div class="email-sidebar">
-      <div class="email-toolbar">📥 Inbox <span style="background:var(--accent2);color:white;border-radius:10px;padding:1px 7px;margin-left:4px;font-size:.7rem">7</span></div>
-      <div id="email-list"></div>
+  <div class="sim-chrome">
+    <div class="sim-titlebar">
+      <div class="sim-dot red"></div><div class="sim-dot yellow"></div><div class="sim-dot green"></div>
+      <div class="sim-url">&#x1F512; mail.google.com/mail/u/0/#inbox</div>
     </div>
-    <!-- EMAIL CONTENT PANE -->
-    <div class="email-pane" id="email-pane">
-      <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);flex-direction:column;gap:8px;padding:2rem;text-align:center">
-        <div style="font-size:2rem">📧</div>
-        <div>Select an email from the inbox to read it</div>
-        <div style="font-size:.78rem">For phishing emails: hover over red highlights to see why they're suspicious, then click "Mark as Phishing"</div>
+    <div class="gmail-wrap">
+      <div class="gmail-sidebar">
+        <button class="gmail-compose-btn">&#x270F;&#xFE0F; Compose</button>
+        <div class="gmail-nav-item active">&#x1F4E5; Inbox <span class="gmail-nav-badge">7</span></div>
+        <div class="gmail-nav-item">&#x2B50; Starred</div>
+        <div class="gmail-nav-item">&#x1F4E4; Sent</div>
+        <div class="gmail-nav-item">&#x1F5D1; Bin</div>
+      </div>
+      <div style="display:grid;grid-template-columns:280px 1fr;height:580px;overflow:hidden">
+        <div class="gmail-list-wrap">
+          <div style="padding:6px 10px;font-size:.7rem;color:#888;border-bottom:1px solid #e0e0e0;background:#fff">Primary &middot; 7 conversations</div>
+          <div id="email-list"></div>
+        </div>
+        <div class="gmail-pane" id="email-pane">
+          <div class="gmail-pane-empty"><span style="font-size:2rem">&#x1F4E7;</span><span>Select an email to read it</span></div>
+        </div>
       </div>
     </div>
-  </div>
-
-  <div id="results-area" style="margin-top:2rem;display:none">
-    <div class="result-box" id="main-result"></div>
-    <div id="breakdown" style="margin-top:1.5rem"></div>
   </div>
 </div>
-
+<div id="result-overlay" style="display:none" class="result-overlay"></div>
 <div class="toast-wrap" id="toast-wrap"></div>
 <script src="<?= APP_URL ?>/assets/js/main.js"></script>
 <script>
-// ═══ EMAIL DATA ═══
-const emails = [
-  {
-    id: 0, from: 'security@paypa1.com', displayFrom: 'PayPal Security <security@paypa1.com>',
-    subject: '⚠️ Urgent: Your PayPal account has been limited',
-    time: 'Fri 09:14', isPhishing: true,
-    redFlags: [
-      {text:'paypa1.com', tip:'Sender domain uses the number "1" instead of the letter "l" — a classic spoofed domain'},
-      {text:'Your PayPal account has been limited', tip:'Creates alarm to trigger a panic response'},
-      {text:'limited to 24 hours', tip:'Artificial time pressure to stop you thinking clearly'},
-      {text:'http://paypa1-secure-verify.ru/account', tip:'Link goes to a .ru (Russian) domain, not paypal.com — hover always to see real URL'},
-      {text:'permanent suspension', tip:'Threat of severe consequence to force compliance'},
-    ],
-    body: `<div class="email-logo" style="color:#003087">🅿 PayPal</div>
-<p>Dear Customer,</p>
-<p>We have detected <strong>suspicious activity</strong> on your account originating from a new device. Your <span class="rf-span" data-flag="1">PayPal account has been limited</span> and your access will be <span class="rf-span" data-flag="4">limited to 24 hours</span> if you do not verify your information.</p>
-<p>To restore your account, please click the link below and confirm your details:</p>
-<p style="text-align:center;margin:1.2rem 0"><a href="#" class="rf-span" data-flag="3" style="background:var(--accent2);color:white;padding:10px 20px;border-radius:6px;font-size:.88rem">Verify My Account Now</a></p>
-<p style="font-size:.76rem;word-break:break-all;color:var(--muted)">Link: <span class="rf-span" data-flag="3">http://paypa1-secure-verify.ru/account</span></p>
-<p>Failure to verify within 24 hours will result in <span class="rf-span" data-flag="4">permanent suspension</span> of your account.</p>
-<p>PayPal Security Team</p>`,
-    clues: ['Sender is paypa1.com (number 1, not L)','Link goes to .ru domain','Creates extreme urgency with 24h deadline','Generic "Dear Customer" — real PayPal uses your name','Threats of permanent suspension']
-  },
-  {
-    id: 1, from: 'noreply@github.com', displayFrom: 'GitHub <noreply@github.com>',
-    subject: 'Your monthly GitHub activity summary — June 2024',
-    time: 'Fri 08:41', isPhishing: false, redFlags: [],
-    body: `<div class="email-logo">🐙 GitHub</div>
-<p>Hi <?= htmlspecialchars(explode(' ',$user['full_name'])[0]) ?>,</p>
-<p>Here's your activity summary for June 2024:</p>
-<ul style="padding-left:1.4rem;line-height:2">
-  <li>28 commits pushed across 4 repositories</li>
-  <li>6 pull requests merged</li>
-  <li>3 issues closed</li>
-  <li>2 repositories starred</li>
-</ul>
-<p>View your full contribution graph at <a href="#" style="color:var(--accent)">github.com/dashboard</a></p>
-<p>Keep contributing — every commit counts!</p>
-<p style="color:var(--muted);font-size:.78rem">You're receiving this because you opted in to GitHub activity summaries. Unsubscribe at github.com/settings/notifications</p>`,
-    clues: []
-  },
-  {
-    id: 2, from: 'it.support@corp-helpdesk.biz', displayFrom: 'IT Helpdesk <it.support@corp-helpdesk.biz>',
-    subject: 'ACTION REQUIRED: Password expiry — reset NOW to avoid lockout',
-    time: 'Fri 10:07', isPhishing: true,
-    redFlags: [
-      {text:'corp-helpdesk.biz', tip:'Your company\'s real IT domain would be on your official intranet. ".biz" is suspicious for a corporate IT department.'},
-      {text:'PASSWORD EXPIRES TODAY', tip:'All caps to create panic and urgency — a key social engineering technique'},
-      {text:'http://corp-helpdesk.biz/reset', tip:'Not your company\'s actual domain. Real IT uses your company\'s own systems.'},
-      {text:'within the next 60 minutes', tip:'Extremely short timeframe designed to bypass rational thinking'},
-      {text:'contact your line manager', tip:'Discouraging you from seeking verification — red flag!'},
-    ],
-    body: `<div class="email-logo" style="color:var(--accent)">🔒 IT Helpdesk</div>
-<p>Dear Employee,</p>
-<p>⚠️ <strong>IMPORTANT: <span class="rf-span" data-flag="1">PASSWORD EXPIRES TODAY</span></strong></p>
-<p>Our systems show your corporate network password is due to expire. To avoid losing access to <strong>all company systems including email, Slack, and file storage</strong>, you MUST reset it <span class="rf-span" data-flag="3">within the next 60 minutes</span>.</p>
-<p>Click below to reset your password:</p>
-<p style="text-align:center;margin:1.2rem 0"><a href="#" class="rf-span" data-flag="2" style="background:var(--red);color:white;padding:10px 20px;border-radius:6px;font-size:.88rem">Reset Password Now</a></p>
-<p style="font-size:.76rem;color:var(--muted)">Direct link: <span class="rf-span" data-flag="2">http://corp-helpdesk.biz/reset?token=emp7743</span></p>
-<p>Do not reply to this email and do not <span class="rf-span" data-flag="4">contact your line manager</span> about this as they have already been notified.</p>
-<p>IT Helpdesk — <span class="rf-span" data-flag="0">corp-helpdesk.biz</span></p>`,
-    clues: ['Domain "corp-helpdesk.biz" is not company IT','ALL CAPS urgency language','Link goes to external domain','Unreasonably short 60-minute window','Specifically tells you not to verify with your manager']
-  },
-  {
-    id: 3, from: 'orders@amazon.co.uk', displayFrom: 'Amazon <orders@amazon.co.uk>',
-    subject: 'Your Amazon order #205-3947812-4829361 has dispatched',
-    time: 'Thu 15:33', isPhishing: false, redFlags: [],
-    body: `<div class="email-logo" style="color:#FF9900">📦 amazon</div>
-<p>Hello,</p>
-<p>Your order has been dispatched and is on its way!</p>
-<div style="background:var(--surface2);border-radius:8px;padding:1rem;margin:1rem 0">
-  <div style="font-size:.82rem;color:var(--muted)">Order #205-3947812-4829361</div>
-  <div style="font-weight:600;margin:.4rem 0">Logitech MX Keys Wireless Keyboard</div>
-  <div style="font-size:.82rem">Estimated delivery: <strong>Tomorrow, before 10pm</strong></div>
-</div>
-<p><a href="#" style="color:var(--accent)">Track your package →</a></p>
-<p style="font-size:.78rem;color:var(--muted);margin-top:1.5rem">This email was sent to confirm your order. If you didn't make this purchase, visit amazon.co.uk/orders and contact us from the secure site.</p>`,
-    clues: []
-  },
-  {
-    id: 4, from: 'ceo@meridian-solutions.biz', displayFrom: 'Mark Davies (CEO) <ceo@meridian-solutions.biz>',
-    subject: 'Confidential — Urgent wire transfer needed',
-    time: 'Thu 14:22', isPhishing: true,
-    redFlags: [
-      {text:'meridian-solutions.biz', tip:'CEO\'s email should come from your company\'s official domain, not a .biz lookalike'},
-      {text:'£14,750', tip:'Specific large amount — BEC attacks often target urgent wire transfers'},
-      {text:'40-22-11 / 87654321', tip:'Providing bank details in email for immediate transfer is a major BEC red flag'},
-      {text:"Don't discuss", tip:'Requesting secrecy to prevent you from verifying through proper channels'},
-      {text:'in an important client meeting', tip:'Creates reason why CEO cannot be reached to verify — classic BEC setup'},
-    ],
-    body: `<div class="email-logo">👔 Mark Davies</div>
-<p>Hi,</p>
-<p>I'm <span class="rf-span" data-flag="4">in an important client meeting</span> and can't be reached by phone right now. I need you to process an urgent payment immediately.</p>
-<p>Please transfer <span class="rf-span" data-flag="1">£14,750</span> to our new supplier for an outstanding invoice:</p>
-<div style="background:var(--surface2);border-radius:8px;padding:1rem;margin:1rem 0;font-family:var(--mono);font-size:.82rem">
-  Bank: Barclays Business<br>
-  Sort Code: <span class="rf-span" data-flag="2">40-22-11</span><br>
-  Account: <span class="rf-span" data-flag="2">87654321</span><br>
-  Reference: INV-9912-SUPPLIER
-</div>
-<p>Please do this before 3pm. <span class="rf-span" data-flag="3">Don't discuss</span> with anyone else — this is commercially sensitive and I'll explain when I'm out of the meeting.</p>
-<p>Thanks,<br>Mark<br>
-<span style="font-size:.76rem;color:var(--muted)"><span class="rf-span" data-flag="0">ceo@meridian-solutions.biz</span></span></p>`,
-    clues: ['CEO email domain is .biz, not your company domain','Business Email Compromise (BEC) wire fraud pattern','Requests secrecy — prevents verification','Uses urgency + authority combination','Cannot be reached to verify — classic BEC setup']
-  },
-  {
-    id: 5, from: 'donotreply@microsoftonline.com', displayFrom: 'Microsoft 365 <donotreply@microsoftonline.com>',
-    subject: 'Sign-in attempt blocked on your Microsoft account',
-    time: 'Thu 11:05', isPhishing: false, redFlags: [],
-    body: `<div class="email-logo" style="color:#0078d4">⊞ Microsoft</div>
-<p>We blocked a sign-in attempt to your Microsoft account.</p>
-<div style="background:var(--surface2);border-radius:8px;padding:1rem;margin:1rem 0;font-size:.84rem">
-  <div>📍 <strong>Location:</strong> Lagos, Nigeria</div>
-  <div style="margin-top:4px">💻 <strong>Device:</strong> Windows PC — Chrome browser</div>
-  <div style="margin-top:4px">🕐 <strong>Time:</strong> Thursday 11:02 UTC</div>
-</div>
-<p>If this was you, you can ignore this email. If it wasn't, your account is safe — the sign-in was blocked. You may want to change your password as a precaution.</p>
-<p><a href="#" style="color:#0078d4">Review recent activity →</a></p>
-<p style="font-size:.76rem;color:var(--muted)">You can manage your account security at account.microsoft.com</p>`,
-    clues: []
-  },
-  {
-    id: 6, from: 'awards@nationalprize-winner.co', displayFrom: 'National Prize Draw <awards@nationalprize-winner.co>',
-    subject: '🎉 CONGRATULATIONS! You\'ve won £50,000 — Claim now!',
-    time: 'Wed 16:51', isPhishing: true,
-    redFlags: [
-      {text:'nationalprize-winner.co', tip:'Suspicious domain — legitimate prize organisations use established domains, not newly registered ones'},
-      {text:'£50,000 PRIZE', tip:'Prize you never entered — if you didn\'t enter a draw, you can\'t have won'},
-      {text:'£25 processing fee', tip:'Legitimate prize draws NEVER ask winners to pay a fee — this is the "advance fee fraud" scam'},
-      {text:'Western Union or gift cards', tip:'Legitimate organisations never request payment via Western Union or gift cards — untraceable payment methods used by scammers'},
-      {text:'expires in 48 hours', tip:'Artificial deadline on a prize you "won" — manufactured urgency'},
-    ],
-    body: `<div class="email-logo" style="color:var(--yellow)">🏆 National Prize Draw</div>
-<p style="text-align:center;font-size:1.2rem;font-weight:800;color:var(--yellow)">🎉 CONGRATULATIONS! 🎉</p>
-<p>You have been selected as the winner of our <span class="rf-span" data-flag="1">£50,000 PRIZE</span> in our National Customer Appreciation Draw!</p>
-<p>Your email address was randomly selected from millions of entries. To claim your prize, you simply need to pay a small <span class="rf-span" data-flag="2">£25 processing fee</span> to cover administrative costs.</p>
-<p>Payment can be made via <span class="rf-span" data-flag="3">Western Union or gift cards</span> (Amazon, iTunes, Google Play) to our processing agent.</p>
-<div style="background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:8px;padding:1rem;margin:1rem 0">
-  ⏰ This offer <span class="rf-span" data-flag="4">expires in 48 hours</span>. You must claim before the deadline or your prize will be forfeited.
-</div>
-<p>Reply to this email with your full name, address, phone number, and date of birth to begin the claiming process.</p>
-<p>From: <span class="rf-span" data-flag="0">nationalprize-winner.co</span></p>`,
-    clues: ['Entered no draw but "won" — impossible','Domain "nationalprize-winner.co" is suspicious','Requires an upfront fee — advance fee fraud','Requests payment via gift cards — untraceable','Wants personal data (DOB, address) for identity theft']
-  }
+var emails=[
+{id:0,phishing:true,from:'PayPal Security',addr:'security@paypa1-alerts.com',to:'you@company.com',date:'Today, 09:14',subject:'⚠️ Urgent: Your PayPal account has been limited',color:'#e91e63',body:'<p>Dear <span class="rf">Valued Customer<span class="rf-tip">Legitimate companies address you by name. Generic greetings mean this was mass-sent to thousands of people.</span></span>,</p><p>We detected unusual activity. Verify your account within <span class="rf">24 hours<span class="rf-tip">Artificial urgency is a classic manipulation tactic designed to stop you thinking clearly before acting.</span></span> or your account will be permanently closed.</p><p>Click to restore access:<br><span class="rf"><a href="#" onclick="return false">http://paypal-secure-verify.account-login.com/restore</a><span class="rf-tip">The real domain is account-login.com, NOT paypal.com. Attackers put brand names before the real domain to fool you. Always look at the part immediately before .com</span></span></p><p>Regards,<br><span class="rf">PayPal Security Team<span class="rf-tip">Sender address is paypa1-alerts.com. The letter L is replaced with the number 1. Examine every character in email addresses carefully.</span></span></p>'},
+{id:1,phishing:false,from:'Sarah Mitchell',addr:'s.mitchell@yourcompany.com',to:'you@company.com',date:'Today, 08:52',subject:'Q3 Team Meeting — Agenda attached',color:'#4caf50',body:'<p>Hi,</p><p>Hope you are well. Here is the agenda for Thursday Q3 review. Meeting room booked 10am Conference Room B.</p><ul><li>Q3 performance review (30 mins)</li><li>Budget planning Q4 (20 mins)</li><li>Team restructure update (10 mins)</li></ul><p>Please come prepared with your team numbers.</p><p>Best,<br>Sarah Mitchell<br>Head of Operations</p>'},
+{id:2,phishing:true,from:'IT Support Desk',addr:'itsupport@micros0ft-helpdesk.net',to:'you@company.com',date:'Yesterday, 16:33',subject:'ACTION REQUIRED: Critical Windows Security Patch',color:'#2196f3',body:'<p>Dear <span class="rf">Employee<span class="rf-tip">Your real IT department addresses you by name. Generic "Employee" means this was mass-sent.</span></span>,</p><p>Your workstation is missing a critical patch. <span class="rf">Failure to install within 2 hours will quarantine your machine from the network<span class="rf-tip">Threatening immediate network disconnection is a pressure tactic. Real IT teams push patches automatically and never ask you to download manually.</span></span>.</p><p>Download:<br><span class="rf"><a href="#" onclick="return false">https://micros0ft-helpdesk.net/patch/security-fix.exe</a><span class="rf-tip">Domain is micros0ft with zero instead of O. Also never download .exe files from email links. This is malware disguised as a patch.</span></span></p><p><span class="rf">IT Support Desk<span class="rf-tip">Sender is micros0ft-helpdesk.net, nothing to do with Microsoft (microsoft.com). Always call your IT team directly to verify.</span></span></p>'},
+{id:3,phishing:false,from:'LinkedIn',addr:'messages-noreply@linkedin.com',to:'you@company.com',date:'Yesterday, 11:20',subject:'James Patel sent you a connection request',color:'#0077b5',body:'<p>Hi,</p><p><strong>James Patel</strong>, Senior Product Manager at Accenture, wants to connect with you on LinkedIn.</p><blockquote style="border-left:3px solid #0077b5;padding-left:12px;margin:12px 0;color:#555;font-style:italic">Hi, I came across your profile and would love to connect. I am working on interesting projects in your space.</blockquote><p><a href="#" onclick="return false" style="background:#0077b5;color:#fff;padding:10px 20px;border-radius:4px;display:inline-block;margin:8px 0;text-decoration:none">Accept</a></p><p style="font-size:.75rem;color:#888">Sent because James Patel sent you a connection invitation. Sender domain: linkedin.com</p>'},
+{id:4,phishing:true,from:'HMRC Gov UK',addr:'noreply@hmrc-taxrefund.co',to:'you@company.com',date:'Mon, 09:05',subject:'Tax Refund Notification — £842.50 awaiting you',color:'#009688',body:'<p>Dear Taxpayer,</p><p>You are eligible for a <span class="rf">tax refund of £842.50<span class="rf-tip">HMRC never initiates refunds by email. Legitimate refunds are processed automatically and notified by post, not via email links.</span></span>.</p><p>Submit your <span class="rf">personal and bank details here<span class="rf-tip">HMRC will NEVER ask for bank details via an email link. This is credential harvesting designed to steal your banking information.</span></span>:<br><span class="rf"><a href="#" onclick="return false">https://hmrc-taxrefund.co/claim</a><span class="rf-tip">Real HMRC domains are gov.uk (e.g. tax.service.gov.uk). The domain hmrc-taxrefund.co is fake, registered by attackers to impersonate HMRC.</span></span></p><p>This offer <span class="rf">expires in 48 hours<span class="rf-tip">Government agencies do not put expiry deadlines on tax refunds. This manufactured urgency is a pressure tactic.</span></span>.</p><p><span class="rf">HM Revenue and Customs<span class="rf-tip">Real HMRC emails only come from @hmrc.gov.uk, never from .co domains. Always verify at gov.uk directly.</span></span></p>'},
+{id:5,phishing:false,from:'Dropbox',addr:'no-reply@dropbox.com',to:'you@company.com',date:'Sun, 15:14',subject:'Rachel shared "Project Brief_Final_v3.pdf" with you',color:'#0061fe',body:'<p>Hi,</p><p><strong>Rachel (r.chen@yourcompany.com)</strong> shared a file with you on Dropbox.</p><div style="background:#f7f7f7;border-radius:8px;padding:16px;margin:12px 0"><div style="font-size:.9rem;font-weight:600">📄 Project Brief_Final_v3.pdf</div><div style="font-size:.78rem;color:#888;margin-top:4px">Shared by Rachel Chen · 2.4 MB</div></div><p><a href="#" onclick="return false" style="background:#0061fe;color:#fff;padding:10px 20px;border-radius:6px;display:inline-block;text-decoration:none">View file</a></p><p style="font-size:.75rem;color:#888">Shared via Dropbox. Sender r.chen@yourcompany.com is a verified Dropbox user.</p>'},
+{id:6,phishing:true,from:'CEO — David Clarke',addr:'d.clarke@yourcompanny.com',to:'you@company.com',date:'Fri, 17:58',subject:'Confidential — Urgent wire transfer needed',color:'#9c27b0',body:'<p>Hi,</p><p>I am in a <span class="rf">board meeting and cannot take calls<span class="rf-tip">Claiming unavailability to prevent phone verification is the hallmark of Business Email Compromise (BEC) attacks.</span></span>. I need you to urgently wire <strong>£18,500</strong> to a new supplier before close of business.</p><p>This is <span class="rf">strictly confidential — do not tell Finance or colleagues<span class="rf-tip">Requesting secrecy bypasses your company approval chain. Legitimate financial requests always follow proper authorisation procedures.</span></span>.</p><p>Account: Zenith Consulting Ltd · Sort: 20-18-53 · Acc: 83924710</p><p>Confirm when done.<br><span class="rf">David Clarke | CEO<span class="rf-tip">Sender email is yourcompanny.com with double N in company. This is a typosquat domain registered by attackers. ALWAYS verify financial requests by calling the sender on a known number.</span></span></p>'}
 ];
 
-// ═══ GAME STATE ═══
-let selectedEmail = null;
-let userAnswers = {}; // id -> 'phishing'|'legit'
-let flagsFound = {}; // id -> Set of found flag indices
-let totalFlagsFound = 0;
-
-// ═══ BUILD EMAIL LIST ═══
-function buildEmailList() {
-  const list = document.getElementById('email-list');
-  list.innerHTML = emails.map(e => `
-    <div class="email-item unread" id="ei-${e.id}" onclick="selectEmail(${e.id})">
-      <div class="email-item-time">${e.time}</div>
-      <div class="email-item-from">${e.from}</div>
-      <div class="email-item-subject">${e.subject}</div>
-    </div>`).join('');
-}
-
-function selectEmail(id) {
-  selectedEmail = id;
-  document.querySelectorAll('.email-item').forEach(el => el.classList.remove('active'));
-  document.getElementById('ei-'+id).classList.add('active');
-  renderEmail(id);
-}
-
-function renderEmail(id) {
-  const e = emails[id];
-  const answered = userAnswers[id];
-  const foundFlags = flagsFound[id] || new Set();
-  const totalFlags = e.redFlags.length;
-  const flagsFoundCount = foundFlags.size;
-
-  let body = e.body;
-  // Apply found/unfound styles to red flag spans
-  body = body.replace(/data-flag="(\d+)"/g, (match, fi) => {
-    const flagIdx = parseInt(fi);
-    const isFound = foundFlags.has(flagIdx);
-    return `${match} class="rf-span${isFound?' found':''}" title="${e.redFlags[flagIdx]?.tip||''}"`;
+var answered={},correct=0,wrong=0;
+function renderList(){
+  var h='';
+  emails.forEach(function(e){
+    var done=answered[e.id]!==undefined;
+    var t=done?(answered[e.id]===e.phishing?'✅ ':'❌ '):'';
+    h+='<div class="gmail-list-item" id="li-'+e.id+'" onclick="openEmail('+e.id+')">'+
+      '<div class="gl-avatar" style="background:'+e.color+'">'+e.from[0]+'</div>'+
+      '<div class="gl-middle"><div class="gl-from">'+e.from+'</div><div class="gl-subject">'+t+e.subject+'</div></div>'+
+      '<div class="gl-date">'+e.date.split(',')[0]+'</div></div>';
   });
-
-  const headerHTML = `
-    <div class="email-header">
-      <div class="email-subject-display">${e.subject}</div>
-      <div class="email-meta">
-        <p>From: <span>${e.displayFrom}</span></p>
-        <p>To: <span><?= htmlspecialchars($user['email']) ?></span></p>
-        <p>Date: <span>${e.time}</span></p>
-      </div>
-      ${e.isPhishing && !answered ? `<div class="alert alert-info mt-2" style="font-size:.78rem"><span class="alert-icon">🔍</span>Click on suspicious text/links to flag red flags. Found <strong id="flag-count-${id}">${flagsFoundCount}</strong>/${totalFlags} red flags.</div>` : ''}
-      ${answered ? `<div class="alert ${answered==='phishing'?'alert-danger':'alert-success'} mt-2" style="font-size:.78rem"><span class="alert-icon">${answered==='phishing'?'🚩':'✅'}</span>You marked this as <strong>${answered==='phishing'?'Phishing':'Legitimate'}</strong>${answered===( e.isPhishing?'phishing':'legit') ? ' — Correct!' : ' — Incorrect'}</div>` : ''}
-    </div>
-    <div class="email-body-area">${body}</div>
-    <div class="email-actions">
-      <button class="flag-btn flag-phish" onclick="markEmail(${id},'phishing')" ${answered?'disabled':''}>🚩 Mark as Phishing</button>
-      <button class="flag-btn flag-legit" onclick="markEmail(${id},'legit')" ${answered?'disabled':''}>✅ Mark as Legitimate</button>
-    </div>`;
-  document.getElementById('email-pane').innerHTML = headerHTML;
-
-  // Add click handlers for red flags
-  document.querySelectorAll('.rf-span').forEach(el => {
-    el.addEventListener('click', function() {
-      const fi = parseInt(this.getAttribute('data-flag'));
-      handleFlagClick(id, fi, this);
-    });
-  });
+  document.getElementById('email-list').innerHTML=h;
 }
-
-function handleFlagClick(emailId, flagIdx, el) {
-  if (!flagsFound[emailId]) flagsFound[emailId] = new Set();
-  if (flagsFound[emailId].has(flagIdx)) return; // already found
-
-  flagsFound[emailId].add(flagIdx);
-  el.classList.add('found');
-  totalFlagsFound++;
-  document.getElementById('flags-found').textContent = totalFlagsFound;
-
-  const count = flagsFound[emailId].size;
-  const fc = document.getElementById('flag-count-'+emailId);
-  if (fc) fc.textContent = count;
-
-  const tip = emails[emailId].redFlags[flagIdx]?.tip || 'Red flag found!';
-  showToast('🚩 Red flag: ' + tip, 'error');
+function openEmail(id){
+  var e=emails[id];
+  document.querySelectorAll('.gmail-list-item').forEach(function(el){el.classList.remove('selected')});
+  var li=document.getElementById('li-'+id);if(li)li.classList.add('selected');
+  var done=answered[id]!==undefined;
+  var ok=done&&(answered[id]===e.phishing);
+  document.getElementById('email-pane').innerHTML=
+    '<div class="gmail-pane-header"><div class="gmail-subject-line">'+e.subject+'</div>'+
+    '<div class="gmail-meta"><div class="gmail-avatar-lg" style="background:'+e.color+'">'+e.from[0]+'</div>'+
+    '<div><div class="gmail-from-name">'+e.from+'</div><div class="gmail-from-addr">From: '+e.addr+' &nbsp;&middot;&nbsp; To: '+e.to+'</div></div>'+
+    '<div class="gmail-timestamp">'+e.date+'</div></div></div>'+
+    '<div class="gmail-body">'+e.body+'</div>'+
+    '<div class="gmail-actions">'+(done?
+      '<span class="'+(ok?'verdict-correct':'verdict-wrong')+'">'+(ok?'✅ Correct!':'❌ Wrong')+'</span>'+
+      '<span style="font-size:.82rem;color:#555;margin-left:6px">This is <strong>'+(e.phishing?'PHISHING':'LEGITIMATE')+'</strong>. '+(e.phishing?'Hover red text to see all red flags.':'No phishing indicators.')+'</span>'
+    :'<button class="btn-phish" onclick="answer('+id+',true)">🚩 Mark as Phishing</button>'+
+      '<button class="btn-safe" onclick="answer('+id+',false)">✅ Mark as Legitimate</button>'+
+      '<span style="font-size:.76rem;color:#888;margin-left:6px">Hover red text for clues</span>'
+    )+'</div>';
 }
-
-function markEmail(id, verdict) {
-  if (userAnswers[id]) return;
-  userAnswers[id] = verdict;
-
-  const el = document.getElementById('ei-'+id);
-  el.style.borderLeft = verdict==='phishing' ? '3px solid var(--red)' : '3px solid var(--green)';
-
-  const answered = Object.keys(userAnswers).length;
-  document.getElementById('answered-count').textContent = answered;
-
-  const correct = verdict === (emails[id].isPhishing ? 'phishing' : 'legit');
-  showToast(correct ? '✅ Correct!' : '❌ Wrong — review the clues', correct ? 'success' : 'error');
-
-  if (answered === emails.length) {
-    document.getElementById('submit-all').disabled = false;
-  }
-  renderEmail(id);
+function answer(id,mp){
+  var e=emails[id];var ok=(mp===e.phishing);
+  answered[id]=mp;if(ok)correct++;else wrong++;
+  document.getElementById('sp-correct').textContent=correct;
+  document.getElementById('sp-wrong').textContent=wrong;
+  document.getElementById('sp-remain').textContent=emails.length-Object.keys(answered).length;
+  renderList();openEmail(id);
+  if(Object.keys(answered).length===emails.length)setTimeout(showResult,700);
 }
-
-function submitAll() {
-  let correct = 0;
-  let breakdown = '';
-  let totalXP = 0;
-
-  emails.forEach(e => {
-    const verdict = userAnswers[e.id];
-    const ok = verdict === (e.isPhishing ? 'phishing' : 'legit');
-    if (ok) correct++;
-    const flagsF = (flagsFound[e.id]?.size || 0);
-    const flagsPossible = e.redFlags.length;
-    const flagScore = flagsPossible > 0 ? `Flags found: ${flagsF}/${flagsPossible}` : 'No flags (legitimate email)';
-
-    breakdown += `
-      <div style="background:var(--surface);border:1px solid ${ok?'var(--green)':'var(--red)'};border-radius:10px;padding:1rem 1.2rem;margin-bottom:8px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start">
-          <div>
-            <div style="font-weight:600;font-size:.88rem">${e.subject}</div>
-            <div style="font-size:.76rem;color:var(--muted)">From: ${e.from}</div>
-          </div>
-          <span style="color:${ok?'var(--green)':'var(--red)'};font-weight:700;font-size:.85rem;white-space:nowrap">${ok?'✓ Correct':'✗ Wrong'}</span>
-        </div>
-        <div style="margin-top:8px;font-size:.78rem;color:var(--muted)">
-          Was: <strong style="color:${e.isPhishing?'var(--red)':'var(--green)'}">${e.isPhishing?'Phishing':'Legitimate'}</strong> · ${flagScore}
-          ${e.isPhishing && e.clues.length ? `<div style="margin-top:4px">Key clues: ${e.clues.slice(0,3).map(c=>`<span style="background:rgba(239,68,68,.1);border-radius:4px;padding:1px 6px;margin-right:4px">${c}</span>`).join('')}</div>` : ''}
-        </div>
-      </div>`;
-  });
-
-  const pct = Math.round(correct / emails.length * 100);
-  const flagBonus = Math.min(50, totalFlagsFound * 5);
-  const score = pct + (pct/100 * flagBonus);
-  const xp = Math.round(score / 100 * 250);
-
-  document.getElementById('results-area').style.display = 'block';
-  document.getElementById('main-result').innerHTML = `
-    <div style="font-size:3rem;margin-bottom:.5rem">🎣</div>
-    <div class="result-score" style="color:${pct>=80?'var(--green)':pct>=60?'var(--yellow)':'var(--red)'}">${pct}%</div>
-    <div class="result-pct">${correct}/${emails.length} emails correctly classified · ${totalFlagsFound} red flags found</div>
-    <div class="result-xp">+${xp} XP Earned</div>
-    <div class="result-msg">${pct>=80?'🛡 Sharp eyes! You can spot phishing attacks reliably — a critical skill.':pct>=60?'⚠️ Good effort. Pay extra attention to sender domains and link destinations.':'❌ Phishing is the #1 attack vector. Review the breakdown below and study the red flags carefully.'}</div>`;
-
-  document.getElementById('breakdown').innerHTML = `<div class="section-title mt-2">📋 Detailed Results</div>${breakdown}`;
-  document.getElementById('results-area').scrollIntoView({behavior:'smooth'});
-
-  fetch('<?= APP_URL ?>/api/save-score.php', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ game_slug:'phishing-email', score:Math.round(score), max_score:100, xp_earned:xp, percentage:Math.round(score) })
-  }).then(r=>r.json()).then(d => {
-    if(d.badge) showToast('🏅 Badge: ' + d.badge, 'success');
-  });
+function showResult(){
+  var p=Math.round(correct/emails.length*100);var xp=p>=80?200:p>=60?100:50;
+  var ov=document.getElementById('result-overlay');ov.style.display='flex';
+  ov.innerHTML='<div class="result-card">'+
+    '<div style="font-size:3rem;margin-bottom:.5rem">'+(p>=80?'🏆':p>=60?'🎯':'😬')+'</div>'+
+    '<div style="font-size:2.5rem;font-weight:800;color:'+(p>=60?'var(--green)':'var(--red)')+'">'+p+'%</div>'+
+    '<div style="color:var(--muted);margin:.4rem 0 1rem">'+correct+' of '+emails.length+' correctly identified</div>'+
+    '<div style="background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.25);color:var(--accent);border-radius:20px;padding:4px 16px;display:inline-block;font-size:.82rem;font-weight:700;margin-bottom:1.2rem">+'+xp+' XP Earned</div>'+
+    '<p style="font-size:.88rem;color:var(--muted);line-height:1.7;margin-bottom:1.5rem">'+(p>=80?'Sharp eye! Always check sender domains character by character, never click links in urgent emails, and verify financial requests by phone.':'Key tells: check sender domains letter-by-letter, watch for urgency and secrecy, never provide credentials or process payments from email alone.')+'</p>'+
+    '<div style="display:flex;gap:10px;justify-content:center">'+
+      '<button onclick="location.reload()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:10px 20px;border-radius:8px;cursor:pointer;font-weight:600">🔄 Retry</button>'+
+      '<a href="<?= APP_URL ?>/dashboard.php" style="background:linear-gradient(135deg,var(--accent),#0099cc);color:#000;padding:10px 20px;border-radius:8px;font-weight:600;text-decoration:none">← Dashboard</a>'+
+    '</div></div>';
+  fetch('<?= APP_URL ?>/api/save-score.php',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({game_slug:'phishing-email',score:correct,max_score:emails.length,xp_earned:xp,percentage:p})});
 }
-
-buildEmailList();
+renderList();
 </script>
-<style>
-.rf-span { background:rgba(239,68,68,.1); border-bottom:2px solid rgba(239,68,68,.4); cursor:pointer; padding:0 2px; border-radius:2px; transition:background .2s; position:relative; }
-.rf-span:hover { background:rgba(239,68,68,.25); }
-.rf-span.found { background:rgba(239,68,68,.3); border-bottom-color:var(--red); }
-.rf-span[title]:hover::after { content:attr(title); position:fixed; background:var(--surface); border:1px solid var(--red); color:var(--text); font-size:.76rem; padding:6px 12px; border-radius:8px; max-width:260px; z-index:999; white-space:normal; line-height:1.5; pointer-events:none; transform:translateY(-110%); box-shadow:0 4px 20px rgba(0,0,0,.4); }
-</style>
 </body>
 </html>
