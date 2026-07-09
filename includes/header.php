@@ -40,6 +40,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
       <a href="<?= APP_URL ?>/admin/" class="nav-link <?= str_starts_with($currentPage,'admin')?'active':'' ?>">Admin</a>
     <?php endif; ?>
     <a href="<?= APP_URL ?>/dashboard.php" class="nav-link <?= $currentPage==='dashboard'?'active':'' ?>">Dashboard</a>
+    <a href="<?= APP_URL ?>/simulator.php" class="nav-link <?= $currentPage==='simulator'?'active':'' ?>" style="<?= $currentPage==='simulator'?'':'color:var(--yellow)' ?>">🎮 Simulator</a>
     <div class="nav-avatar" title="<?= htmlspecialchars($user['full_name']) ?>" onclick="toggleUserMenu()">
       <?= htmlspecialchars($user['avatar_initials']) ?>
     </div>
