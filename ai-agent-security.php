@@ -1,6 +1,5 @@
 <?php
 $pageTitle = 'AI Agent Security — Agentic Attack Simulator';
-$currentPage = 'ai-agent';
 require_once __DIR__ . '/includes/header.php';
 ?>
 <style>
@@ -19,7 +18,6 @@ require_once __DIR__ . '/includes/header.php';
 }
 body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13.5px;line-height:1.65;min-height:100vh}
 
-<style>
 /* ── SCARY ADDITIONS ──────────────────────────────── */
 
 /* Breach flash */
@@ -70,7 +68,6 @@ body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,
 .breach-timer{margin-left:auto;background:rgba(200,20,20,.18);border:1px solid rgba(240,80,80,.45);border-radius:7px;padding:.32rem .65rem;text-align:center;flex-shrink:0}
 .bt-lbl{font-size:.57rem;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:.1rem}
 .bt-val{font-size:1.05rem;font-weight:800;color:var(--red);font-family:var(--mono)}
-</style>
 
 /* ── FAC NOTES ─── */
 .fac{background:var(--s1);border:1px solid var(--bd2);border-radius:8px;margin:.75rem;overflow:hidden;flex-shrink:0}
