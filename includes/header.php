@@ -41,6 +41,7 @@ $currentPage = basename($_SERVER['PHP_SELF'], '.php');
     <?php endif; ?>
     <a href="<?= APP_URL ?>/dashboard.php" class="nav-link <?= $currentPage==='dashboard'?'active':'' ?>">Dashboard</a>
     <a href="<?= APP_URL ?>/simulator.php" class="nav-link <?= $currentPage==='simulator'?'active':'' ?>" style="<?= $currentPage==='simulator'?'':'color:var(--yellow)' ?>">🎮 Simulator</a>
+    <a href="<?= APP_URL ?>/ai-agent-security.php" class="nav-link <?= $currentPage==='ai-agent'?'active':'' ?>" style="<?= $currentPage==='ai-agent'?'':'color:var(--cyan)' ?>">🤖 AI Agents</a>
     <div class="nav-avatar" title="<?= htmlspecialchars($user['full_name']) ?>" onclick="toggleUserMenu()">
       <?= htmlspecialchars($user['avatar_initials']) ?>
     </div>
